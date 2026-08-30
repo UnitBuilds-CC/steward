@@ -192,6 +192,7 @@ impl RunningProcess {
                             if process_exited.load(Ordering::SeqCst) {
                                 break;
                             }
+                            task::yield_now().await;
                         }
                     });
                     tokio::select! {
@@ -596,7 +597,7 @@ impl ProcessPool {
             });
         }
 
-        signal::ctrl_c().await.unwrap();
+        signal::ctrl_c().await.map_err(Error::IoError)?;
         eprintln!(); // Prints `^C` in terminal on its own line
 
         let expire = Instant::now() + timeout;
@@ -617,40 +618,29 @@ mod colors {
     use rand::{seq::SliceRandom, rng};
 
     pub fn make(n: u8) -> Vec<Color> {
-        // Preferred colors
-        let mut primaries = vec![
+        let palette = vec![
             // Color::Red, // Red is for errors
             Color::Green,
             Color::Yellow,
             Color::Blue,
             Color::Magenta,
             Color::Cyan,
-        ];
-        // Not as good as primaries, but good enough to distinct processes
-        let secondaries = vec![
             Color::Color256(24),
             Color::Color256(172),
             Color::Color256(142),
         ];
 
-        // Let's check first if we can get away with just primary colors
-        if n <= primaries.len() as u8 {
-            shuffle(primaries, n)
-        }
-        // Otherwise, let's check if primary + secondary combined would work
-        else if n <= (primaries.len() + primaries.len()) as u8 {
-            primaries.extend(secondaries);
-            shuffle(primaries, n)
-        } else {
-            // TODO: Duplicate primary + secondary colors vec as many is needed, then shuffle
-            todo!()
-        }
+        shuffle(palette, n)
     }
 
-    fn shuffle<T>(mut items: Vec<T>, n: u8) -> Vec<T> {
-        items.truncate(n as usize);
-        items.shuffle(&mut rng());
-        items
+    fn shuffle<T: Clone>(items: Vec<T>, n: u8) -> Vec<T> {
+        let mut rng = rng();
+        let mut indices: Vec<usize> = (0..n as usize).collect();
+        indices.shuffle(&mut rng);
+        indices
+            .into_iter()
+            .map(|i| items[i % items.len()].clone())
+            .collect()
     }
 }
 

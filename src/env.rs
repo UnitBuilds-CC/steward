@@ -103,8 +103,15 @@ impl PATH {
     const DEL: char = ';';
 
     /// Gets the `PATH` value from an environment of the current process.
+    #[cfg(unix)]
     pub fn get() -> Option<String> {
         Env::parent().get("PATH").map(|x| x.to_owned())
+    }
+
+    /// Gets the `PATH` value from an environment of the current process.
+    #[cfg(windows)]
+    pub fn get() -> Option<String> {
+        std::env::var("PATH").ok()
     }
 
     /// Extends the `PATH` value taken the current process and returns the extended value. It doesn't extend the `PATH` of the current process.

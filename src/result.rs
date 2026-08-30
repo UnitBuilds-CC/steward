@@ -41,17 +41,6 @@ pub enum Error {
     ProcessDoesNotExist,
     /// When a process manager failed to kill hanged child process, there is a zombie process left hanging around.
     /// This error provides details, such as process id and an error, so user could handle cleaning manually.
-    #[cfg(unix)]
-    #[error("Process with pid {pid} hanged and we were unable to kill it. Error: {err}")]
-    Zombie {
-        /// Process id of the hanged process.
-        pid: u32,
-        /// Error raised on attempt to terminate the hanged process.
-        err: KillError,
-    },
-    /// When a process manager failed to kill hanged child process, there is a zombie process left hanging around.
-    /// This error provides details, such as process id and an error, so user could handle cleaning manually.
-    #[cfg(windows)]
     #[error("Process with pid {pid} hanged and we were unable to kill it. Error: {err}")]
     Zombie {
         /// Process id of the hanged process.
@@ -75,9 +64,10 @@ impl From<string::FromUtf8Error> for Error {
 
 impl From<process::Output> for Error {
     fn from(output: process::Output) -> Self {
-        if output.status.success() {
-            panic!("Failed to convert command output to error because the command succeeded. Output: {:#?}", output);
-        }
+        debug_assert!(
+            !output.status.success(),
+            "Attempted to convert a successful command output into an error"
+        );
         Self::NonZeroExitCode {
             code: output.status.code(),
             output,

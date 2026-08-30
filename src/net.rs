@@ -195,6 +195,51 @@ impl HttpService {
             }))
         }
     }
+
+    fn is_https(&self) -> bool {
+        matches!(self.addr.scheme_str(), Some("https"))
+    }
+
+    async fn request<C>(&self, connector: C) -> Result<Response<Body>, hyper::Error>
+    where
+        C: hyper::client::connect::Connect + Clone + Send + Sync + 'static,
+    {
+        let client = Client::builder().build(connector);
+        client.request(self.build_req()).await
+    }
+
+    async fn check_with<C>(&self, connector: C) -> Result<(), ()>
+    where
+        C: hyper::client::connect::Connect + Clone + Send + Sync + 'static,
+    {
+        let res = self.request(connector).await.map_err(|_| ())?;
+        Self::handle_res(res).map_err(|_| ())
+    }
+
+    async fn wait_with<C>(&self, connector: C) -> Result<(), Box<dyn DependencyWaitError>>
+    where
+        C: hyper::client::connect::Connect + Clone + Send + Sync + 'static,
+    {
+        let client = Client::builder().build(connector);
+        let start = Instant::now();
+
+        loop {
+            let remaining = self.timeout.saturating_sub(start.elapsed());
+            if remaining.is_zero() {
+                return Err(Box::new(NetServiceWaitError::Timeout));
+            }
+
+            let req = self.build_req();
+
+            match time::timeout(remaining, client.request(req)).await {
+                Ok(Ok(res)) => return Self::handle_res(res),
+                Ok(Err(_)) => (),
+                Err(_) => return Err(Box::new(NetServiceWaitError::Timeout)),
+            }
+
+            time::sleep(ITER_GAP).await;
+        }
+    }
 }
 
 #[async_trait]
@@ -204,70 +249,18 @@ impl Dependency for HttpService {
     }
 
     async fn check(&self) -> Result<(), ()> {
-        match self.addr.scheme_str() {
-            Some("https") => {
-                let connector = Self::https_connector();
-                let client = Client::builder().build(connector);
-                let req = self.build_req();
-                let res = client.request(req).await.map_err(|_| ())?;
-                Self::handle_res(res).map_err(|_| ())
-            }
-            Some(_) | None => {
-                let connector = Self::http_connector();
-                let client = Client::builder().build(connector);
-                let req = self.build_req();
-                let res = client.request(req).await.map_err(|_| ())?;
-                Self::handle_res(res).map_err(|_| ())
-            }
+        if self.is_https() {
+            self.check_with(Self::https_connector()).await
+        } else {
+            self.check_with(Self::http_connector()).await
         }
     }
 
     async fn wait(&self) -> Result<(), Box<dyn DependencyWaitError>> {
-        let start = Instant::now();
-
-        match self.addr.scheme_str() {
-            Some("https") => {
-                let connector = Self::https_connector();
-                let client = Client::builder().build(connector);
-
-                loop {
-                    let remaining = self.timeout.saturating_sub(start.elapsed());
-                    if remaining.is_zero() {
-                        return Err(Box::new(NetServiceWaitError::Timeout));
-                    }
-
-                    let req = self.build_req();
-
-                    match time::timeout(remaining, client.request(req)).await {
-                        Ok(Ok(res)) => return Self::handle_res(res),
-                        Ok(Err(_)) => (),
-                        Err(_) => return Err(Box::new(NetServiceWaitError::Timeout)),
-                    }
-
-                    time::sleep(ITER_GAP).await;
-                }
-            }
-            Some(_) | None => {
-                let connector = Self::http_connector();
-                let client = Client::builder().build(connector);
-
-                loop {
-                    let remaining = self.timeout.saturating_sub(start.elapsed());
-                    if remaining.is_zero() {
-                        return Err(Box::new(NetServiceWaitError::Timeout));
-                    }
-
-                    let req = self.build_req();
-
-                    match time::timeout(remaining, client.request(req)).await {
-                        Ok(Ok(res)) => return Self::handle_res(res),
-                        Ok(Err(_)) => (),
-                        Err(_) => return Err(Box::new(NetServiceWaitError::Timeout)),
-                    }
-
-                    time::sleep(ITER_GAP).await;
-                }
-            }
+        if self.is_https() {
+            self.wait_with(Self::https_connector()).await
+        } else {
+            self.wait_with(Self::http_connector()).await
         }
     }
 }
