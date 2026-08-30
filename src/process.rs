@@ -359,6 +359,19 @@ pub enum PoolEntry<Loc, Dep: ?Sized> {
     },
 }
 
+impl<Loc: std::fmt::Debug, Dep: std::fmt::Debug + ?Sized> std::fmt::Debug for PoolEntry<Loc, Dep> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Process(process) => f.debug_tuple("Process").field(process).finish(),
+            Self::ProcessWithDep { process, dependency } => f
+                .debug_struct("ProcessWithDep")
+                .field("process", process)
+                .field("dependency", dependency)
+                .finish(),
+        }
+    }
+}
+
 impl<Loc> PoolEntry<Loc, dyn Dependency>
 where
     Loc: Location + 'static,
