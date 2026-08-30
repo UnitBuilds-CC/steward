@@ -30,4 +30,4 @@ tls = { package = "hyper-tls", version = "0.5.0", features = ["vendored"], optio
 nix = "0.20.0"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3.9", features = ["errhandlingapi"] }
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Threading"] }

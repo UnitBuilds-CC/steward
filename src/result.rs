@@ -9,7 +9,7 @@ pub type KillError = nix::Error;
 
 /// Error raised when a process manager failed to kill hanged process after timeout. It is platform-specific.
 #[cfg(windows)]
-pub type KillError = winapi::shared::minwindef::DWORD;
+pub type KillError = u32;
 
 /// Error type of this crate.
 #[derive(thiserror::Error, Debug)]

@@ -279,56 +279,31 @@ impl RunningProcess {
 
     #[cfg(windows)]
     pub(crate) fn kill(pid: u32) -> Result<()> {
-        use winapi::{
-            shared::{
-                minwindef::{BOOL, DWORD, FALSE, UINT},
-                ntdef::NULL,
-            },
-            um::{
-                errhandlingapi::GetLastError,
-                handleapi::CloseHandle,
-                processthreadsapi::{OpenProcess, TerminateProcess},
-                winnt::{HANDLE, PROCESS_TERMINATE},
-            },
+        use windows_sys::Win32::{
+            Foundation::{CloseHandle, GetLastError, FALSE, HANDLE},
+            System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE},
         };
 
-        // since we only wish to kill the process
-        const DESIRED_ACCESS: DWORD = PROCESS_TERMINATE;
-
-        const INHERIT_HANDLE: BOOL = FALSE;
-
-        // for some reason windows doesn't have any exit codes,
-        // you just use what ever you want?
-        //
-        // so we're using exit code `0` then
-        const EXIT_CODE: UINT = 0;
-
-        // windows being window you have to call this a lot
-        // so i just extracted it to its own function
-        unsafe fn get_error(pid: u32) -> Result<()> {
-            // https://docs.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror
-            let err: DWORD = GetLastError();
-
-            Err(Error::Zombie { pid, err })
-        }
-
         unsafe {
-            // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-openprocess
-            let handle: HANDLE = OpenProcess(DESIRED_ACCESS, INHERIT_HANDLE, pid);
-            if handle == NULL {
-                get_error(pid)?;
+            let handle: HANDLE = OpenProcess(PROCESS_TERMINATE, 0, pid);
+            if handle == std::ptr::null_mut() {
+                return Err(Error::Zombie {
+                    pid,
+                    err: GetLastError(),
+                });
             }
 
-            // https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-terminateprocess
-            let terminate_result: BOOL = TerminateProcess(handle, EXIT_CODE);
-            if terminate_result == FALSE {
-                get_error(pid)?;
+            if TerminateProcess(handle, 0) == FALSE {
+                let err = GetLastError();
+                let _ = CloseHandle(handle);
+                return Err(Error::Zombie { pid, err });
             }
 
-            // https://docs.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-closehandle
-            let close_result: BOOL = CloseHandle(handle);
-            if close_result == FALSE {
-                get_error(pid)?;
+            if CloseHandle(handle) == FALSE {
+                return Err(Error::Zombie {
+                    pid,
+                    err: GetLastError(),
+                });
             }
         }
 
