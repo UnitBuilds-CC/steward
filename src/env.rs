@@ -222,7 +222,7 @@ mod tests {
     fn env_into_iterator_borrowed() {
         let env = Env::from_vec(vec![("A", "1"), ("B", "2")]);
         let mut items: Vec<(&str, &str)> = (&env).into_iter().collect();
-        items.sort_by(|a, b| a.0.cmp(&b.0));
+        items.sort_by(|a, b| a.0.cmp(b.0));
         assert_eq!(items, vec![("A", "1"), ("B", "2")]);
     }
 

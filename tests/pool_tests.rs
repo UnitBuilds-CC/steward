@@ -25,14 +25,14 @@ fn pool_construction_empty() {
 
 #[test]
 fn pool_construction_single_process() {
-    let pool = vec![make_quick_process("test", "echo hello")];
+    let pool = [make_quick_process("test", "echo hello")];
     assert_eq!(pool.len(), 1);
     assert_eq!(pool[0].tag(), "test");
 }
 
 #[test]
 fn pool_construction_multiple_processes() {
-    let pool = vec![
+    let pool = [
         make_quick_process("web", "echo web"),
         make_quick_process("api", "echo api"),
         make_quick_process("worker", "echo worker"),

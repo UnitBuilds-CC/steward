@@ -6,7 +6,7 @@ fn env_construction(c: &mut Criterion) {
     let mut group = c.benchmark_group("env_construction");
 
     group.bench_function("empty", |b| {
-        b.iter(|| Env::empty())
+        b.iter(Env::empty)
     });
 
     group.bench_function("one", |b| {
@@ -132,7 +132,7 @@ fn path_operations(c: &mut Criterion) {
     });
 
     c.bench_function("path_get", |b| {
-        b.iter(|| PATH::get())
+        b.iter(PATH::get)
     });
 }
 

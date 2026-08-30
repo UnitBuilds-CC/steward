@@ -599,7 +599,7 @@ mod tests {
           format!("ls {}", "."),
           env: env,
           pwd: loc,
-          msg: format!("!"),
+          msg: "!".to_string(),
         }
     }
 
@@ -609,7 +609,7 @@ mod tests {
           exe: format!("ls {}", "."),
           env: env,
           pwd: loc,
-          msg: format!("!"),
+          msg: "!".to_string(),
         }
     }
 
@@ -619,7 +619,7 @@ mod tests {
           "ls",
           env: env,
           pwd: loc,
-          msg: format!("!"),
+          msg: "!".to_string(),
         }
     }
 
@@ -629,7 +629,7 @@ mod tests {
           exe: "ls",
           env: env,
           pwd: loc,
-          msg: format!("!"),
+          msg: "!".to_string(),
         }
     }
 
@@ -642,7 +642,7 @@ mod tests {
           "ls",
           env: env,
           pwd: loc,
-          msg: Some(format!("!")),
+          msg: Some("!".to_string()),
         }
     }
 
@@ -652,7 +652,7 @@ mod tests {
           exe: "ls",
           env: env,
           pwd: loc,
-          msg: Some(format!("!")),
+          msg: Some("!".to_string()),
         }
     }
 
@@ -662,7 +662,7 @@ mod tests {
           format!("ls {}", "."),
           env: env,
           pwd: loc,
-          msg: Some(format!("!")),
+          msg: Some("!".to_string()),
         }
     }
 
@@ -672,7 +672,7 @@ mod tests {
           exe: format!("ls {}", "."),
           env: env,
           pwd: loc,
-          msg: Some(format!("!")),
+          msg: Some("!".to_string()),
         }
     }
 
@@ -788,7 +788,7 @@ mod timeout_tests {
     #[test]
     fn kill_timeout_deref_to_duration() {
         let timeout = KillTimeout::new(Duration::from_secs(15));
-        let dur: &Duration = &*timeout;
+        let dur: &Duration = &timeout;
         assert_eq!(*dur, Duration::from_secs(15));
     }
 

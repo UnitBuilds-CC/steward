@@ -22,7 +22,7 @@ fn kill_timeout(c: &mut Criterion) {
     let mut group = c.benchmark_group("kill_timeout");
 
     group.bench_function("default", |b| {
-        b.iter(|| KillTimeout::default())
+        b.iter(KillTimeout::default)
     });
 
     group.bench_function("new", |b| {
@@ -130,11 +130,7 @@ fn spawn_overhead(c: &mut Criterion) {
     group.sample_size(10);
 
     let cmd = Cmd {
-        exe: if cfg!(windows) {
-            "echo bench".to_string()
-        } else {
-            "echo bench".to_string()
-        },
+        exe: "echo bench".to_string(),
         env: Env::empty(),
         pwd: BenchLoc::root(),
         msg: None,

@@ -319,7 +319,7 @@ impl RunningProcess {
 
         unsafe {
             let handle: HANDLE = OpenProcess(PROCESS_TERMINATE, 0, pid);
-            if handle == std::ptr::null_mut() {
+            if handle.is_null() {
                 return Err(Error::Zombie {
                     pid,
                     err: GetLastError(),
