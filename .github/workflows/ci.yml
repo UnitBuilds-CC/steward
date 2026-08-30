@@ -8,6 +8,9 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
 jobs:
   check:
     name: Check & Test
@@ -18,6 +21,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@master
@@ -46,6 +51,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@master
@@ -66,8 +73,6 @@ jobs:
           --ignore RUSTSEC-2023-0018
           --ignore RUSTSEC-2024-0357
           --ignore RUSTSEC-2025-0004
-          --ignore RUSTSEC-2026-0007
-          --ignore RUSTSEC-2026-0097
 
   msrv:
     name: MSRV Check
@@ -75,6 +80,8 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install MSRV toolchain
         uses: dtolnay/rust-toolchain@master

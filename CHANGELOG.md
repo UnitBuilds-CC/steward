@@ -11,7 +11,7 @@
 **Dependencies**
 - Upgraded `hyper` 0.14 → 1.x (with `hyper-util`, `http-body-util`, `http` 1.0).
 - Upgraded `thiserror` 1 → 2, `rand` 0.8 → 0.9, `nix` 0.20 → 0.29.
-- Dropped `once_cell` in favor of `std::sync::LazyLock` (MSRV now 1.80).
+- Dropped `once_cell` in favor of `std::sync::LazyLock` (MSRV now 1.85).
 - Added optional `tracing` feature for structured logging.
 
 **Performance**
@@ -37,7 +37,7 @@
 - Enabled runnable doc tests for `Env::one` and `KillTimeout::new`.
 
 **Infrastructure**
-- Set MSRV to 1.80 (`rust-version` in Cargo.toml).
+- Set MSRV to 1.85 (`rust-version` in Cargo.toml).
 - Modernized CI: actions v4, Windows added to matrix, `cargo audit`, MSRV verification job.
 - Documented security model (shell injection, trust model).
 

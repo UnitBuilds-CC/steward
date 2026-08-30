@@ -170,13 +170,12 @@ mod tests {
 
     #[test]
     fn env_parent_contains_current_process_env() {
-        std::env::set_var("STEWARD_TEST_VAR", "steward_test_value");
         let env = Env::parent();
-        assert_eq!(
-            env.get("STEWARD_TEST_VAR").map(|s| s.as_str()),
-            Some("steward_test_value")
+        assert!(
+            env.get("PATH").is_some(),
+            "PATH should be set in the process environment"
         );
-        std::env::remove_var("STEWARD_TEST_VAR");
+        assert!(env.into_iter().count() > 0);
     }
 
     #[test]

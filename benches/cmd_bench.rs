@@ -140,7 +140,8 @@ fn spawn_overhead(c: &mut Criterion) {
                     ..Default::default()
                 };
                 let running = cmd.spawn(opts).unwrap();
-                let _ = running.into_child();
+                let mut child = running.into_child();
+                let _ = child.wait().await;
             })
         })
     });

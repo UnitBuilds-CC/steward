@@ -88,7 +88,9 @@
 //! in the `exe` field will be interpreted by the shell. Do not pass untrusted
 //! input directly as a command string — sanitize or escape it first.
 //!
-//! Child processes inherit the environment variables you provide via [`Env`].
+//! Child processes inherit the parent process environment. The [`Env`] you provide
+//! via [`Cmd`] adds or overrides entries but does not clear inherited variables.
+//! `Env::empty()` does not isolate child processes from parent secrets.
 //! There is no sandboxing: spawned processes have the same OS-level permissions
 //! as the parent process. Do not run steward with elevated privileges unless
 //! you trust all commands and their transitive dependencies.

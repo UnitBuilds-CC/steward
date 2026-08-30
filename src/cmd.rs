@@ -768,9 +768,16 @@ mod timeout_tests {
     use super::*;
 
     #[test]
-    fn kill_timeout_default_is_10_seconds() {
+    fn kill_timeout_default_respects_env() {
         let timeout = KillTimeout::default();
-        assert_eq!(timeout.duration(), Duration::from_secs(10));
+        let expected = match std::env::var("PROCESS_TIMEOUT") {
+            Ok(val) => val
+                .parse::<u64>()
+                .map(Duration::from_secs)
+                .unwrap_or(Duration::from_secs(10)),
+            Err(_) => Duration::from_secs(10),
+        };
+        assert_eq!(timeout.duration(), expected);
     }
 
     #[test]

@@ -549,6 +549,7 @@ impl ProcessPool {
                                 "{} Failed to spawn {} process: {}",
                                 colored_tag_col, colored_tag, err
                             );
+                            exited_processes.fetch_add(1, Ordering::SeqCst);
                             return;
                         }
                     };
