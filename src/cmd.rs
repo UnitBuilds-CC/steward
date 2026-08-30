@@ -52,6 +52,13 @@ pub struct KillTimeout(Duration);
 
 impl KillTimeout {
     /// Constructs a new timeout.
+    ///
+    /// ```
+    /// # use steward::KillTimeout;
+    /// # use std::time::Duration;
+    /// let timeout = KillTimeout::new(Duration::from_secs(30));
+    /// assert_eq!(timeout.duration(), Duration::from_secs(30));
+    /// ```
     pub fn new(duration: Duration) -> Self {
         Self(duration)
     }

@@ -25,6 +25,12 @@ impl Env {
     }
 
     /// Constructs a new container with one entry.
+    ///
+    /// ```
+    /// # use steward::Env;
+    /// let env = Env::one("KEY", "VALUE");
+    /// assert_eq!(env.get("KEY").map(|s| s.as_str()), Some("VALUE"));
+    /// ```
     pub fn one<K: ToString, V: ToString>(k: K, v: V) -> Self {
         let mut data = HashMap::with_capacity(1);
         data.insert(k.to_string(), v.to_string());
