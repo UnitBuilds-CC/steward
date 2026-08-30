@@ -48,12 +48,14 @@ impl Env {
     }
 
     /// Inserts one entry into existing container by mutating it.
+    #[must_use]
     pub fn insert<K: ToString, V: ToString>(mut self, k: K, v: V) -> Self {
         self.0.insert(k.to_string(), v.to_string());
         self
     }
 
     /// Inserts one entry into container by mutating it.
+    #[must_use]
     pub fn insert_cloned<K: ToString, V: ToString>(&self, k: K, v: V) -> Self {
         let mut cloned = self.0.clone();
         cloned.insert(k.to_string(), v.to_string());
@@ -61,12 +63,14 @@ impl Env {
     }
 
     /// Merges two containers by mutating the receiver.
+    #[must_use]
     pub fn extend(mut self, env: Self) -> Self {
         self.0.extend(env.0);
         self
     }
 
     /// Merges two containers and returns a new cloned one. Doesn't mutate a receiver.
+    #[must_use]
     pub fn extend_cloned(&self, env: Self) -> Self {
         Self(self.0.clone().into_iter().chain(env.0).collect())
     }

@@ -13,6 +13,7 @@ pub type KillError = u32;
 
 /// Error type of this crate.
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// IO error that might happen during command / process execution.
     #[error("IO error: {0}")]

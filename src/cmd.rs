@@ -173,6 +173,7 @@ where
     }
 
     /// Runs one-off command with inherited [`Stdio`](std::process::Stdio). Prints headline (witn [`Cmd::msg`](Cmd::msg), if provided) to stderr.
+    #[must_use]
     pub async fn run(&self) -> Result<()> {
         eprintln!("{}", crate::headline!(self));
 
@@ -188,6 +189,7 @@ where
     }
 
     /// Runs one-off command. Doesn't print anything.
+    #[must_use]
     pub async fn silent(&self) -> Result<()> {
         let opts = SpawnOptions {
             stdout: Stdio::null(),
@@ -201,6 +203,7 @@ where
     }
 
     /// Runs one-off command and returns [`Output`](Output). Doesn't print anything.
+    #[must_use]
     pub async fn output(&self) -> Result<Output> {
         let opts = SpawnOptions {
             stdout: Stdio::piped(),
