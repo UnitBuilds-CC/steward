@@ -154,13 +154,13 @@ where
     pub(crate) const SHELL: &'static str = "cmd";
 
     #[cfg(unix)]
-    pub(crate) fn shelled(cmd: &str) -> Vec<&str> {
-        vec!["-c", cmd]
+    pub(crate) fn shelled(cmd: &str) -> [&str; 2] {
+        ["-c", cmd]
     }
 
     #[cfg(windows)]
-    pub(crate) fn shelled(cmd: &str) -> Vec<&str> {
-        vec!["/c", cmd]
+    pub(crate) fn shelled(cmd: &str) -> [&str; 2] {
+        ["/c", cmd]
     }
 
     /// Runs one-off command with inherited [`Stdio`](std::process::Stdio). Prints headline (witn [`Cmd::msg`](Cmd::msg), if provided) to stderr.
@@ -218,7 +218,7 @@ where
         let mut command = Command::new(Cmd::<Loc>::SHELL);
         command
             .args(Cmd::<Loc>::shelled(&cmd.exe))
-            .envs(cmd.env.to_owned())
+            .envs(&cmd.env)
             .current_dir(cmd.pwd.as_path())
             .stdout(stdout)
             .stderr(stderr);

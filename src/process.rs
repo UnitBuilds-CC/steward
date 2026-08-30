@@ -440,15 +440,14 @@ impl ProcessPool {
         let processes: Vec<(PoolEntry<Loc, dyn Dependency>, Color)> =
             pool.into_iter().zip(colors).collect();
 
-        let processes_list = processes.iter().fold(String::new(), |acc, (entry, color)| {
-            let process = entry.process();
-            let styled = console::style(process.tag().to_string()).fg(*color).bold();
-            if acc.is_empty() {
-                styled.to_string()
-            } else {
-                format!("{}, {}", acc, styled)
-            }
-        });
+        let processes_list = processes
+            .iter()
+            .map(|(entry, color)| {
+                let process = entry.process();
+                console::style(process.tag().to_string()).fg(*color).bold().to_string()
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
 
         eprintln!("❯ {} {}", console::style("Running:").bold(), processes_list);
 
@@ -461,19 +460,22 @@ impl ProcessPool {
                 let cmd = process.cmd();
                 let timeout = process.timeout();
                 let colored_tag = console::style(tag.to_owned()).fg(color).bold();
-                let colored_tag_col = {
+                let colored_tag_col: Arc<str> = {
                     let len = tag.len();
                     let pad = " ".repeat(if len < tag_col_length {
                         tag_col_length - len + 2
                     } else {
                         2
                     });
-                    console::style(format!(
-                        "{tag}{pad}{pipe}",
-                        tag = colored_tag,
-                        pad = pad,
-                        pipe = console::style("|").fg(color).bold()
-                    ))
+                    Arc::from(
+                        format!(
+                            "{tag}{pad}{pipe}",
+                            tag = colored_tag,
+                            pad = pad,
+                            pipe = console::style("|").fg(color).bold()
+                        )
+                        .as_str(),
+                    )
                 };
 
                 let dep_res = match dependency {
@@ -526,12 +528,20 @@ impl ProcessPool {
                             colored_tag_col, colored_tag
                         ),
                         Some(stdout) => {
-                            let mut reader = BufReader::new(stdout).lines();
+                            let mut reader = BufReader::new(stdout);
                             task::spawn({
                                 let tag = colored_tag_col.clone();
                                 async move {
-                                    while let Some(line) = reader.next_line().await.unwrap() {
-                                        eprintln!("{} {}", tag, line);
+                                    let mut buf = String::new();
+                                    loop {
+                                        buf.clear();
+                                        match reader.read_line(&mut buf).await {
+                                            Ok(0) => break,
+                                            Ok(_) => {
+                                                eprintln!("{} {}", tag, buf.trim_end());
+                                            }
+                                            Err(_) => break,
+                                        }
                                     }
                                 }
                             });
@@ -544,12 +554,20 @@ impl ProcessPool {
                             colored_tag_col, colored_tag
                         ),
                         Some(stderr) => {
-                            let mut reader = BufReader::new(stderr).lines();
+                            let mut reader = BufReader::new(stderr);
                             task::spawn({
                                 let tag = colored_tag_col.clone();
                                 async move {
-                                    while let Some(line) = reader.next_line().await.unwrap() {
-                                        eprintln!("{} {}", tag, line);
+                                    let mut buf = String::new();
+                                    loop {
+                                        buf.clear();
+                                        match reader.read_line(&mut buf).await {
+                                            Ok(0) => break,
+                                            Ok(_) => {
+                                                eprintln!("{} {}", tag, buf.trim_end());
+                                            }
+                                            Err(_) => break,
+                                        }
                                     }
                                 }
                             });
