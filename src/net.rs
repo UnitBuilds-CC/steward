@@ -6,25 +6,27 @@ use std::{
 };
 
 use async_trait::async_trait;
-use hyper::{client::HttpConnector, http::uri::InvalidUri, Body, Client, Request, Response, Uri};
+use bytes::Bytes;
+use http::{uri::InvalidUri, Request, Response, Uri};
+use http_body_util::Empty;
+use hyper_util::{
+    client::legacy::{connect::Connect, Client},
+    rt::TokioExecutor,
+};
 use tokio::{io::AsyncWriteExt, net::TcpStream, time};
 
 use crate::{Dependency, DependencyWaitError};
 
-pub use hyper::Method as HttpMethod;
+pub use http::Method as HttpMethod;
 
-const ITER_GAP: Duration = Duration::from_millis(250); // ms
+const ITER_GAP: Duration = Duration::from_millis(250);
 
-/// Error returned from a network [`Dependency::wait`](Dependency::wait) method.
 #[derive(thiserror::Error, Debug)]
 enum NetServiceWaitError {
-    /// Rejected network request.
     #[error("Rejection: {}", .error)]
     Rejection {
-        /// Error from the dependency.
         error: Box<dyn StdError + Send + Sync>,
     },
-    /// Request timeout.
     #[error("Timeout")]
     Timeout,
 }
@@ -120,25 +122,34 @@ pub struct HttpService {
     pub timeout: Duration,
 }
 
+type EmptyBody = Empty<Bytes>;
+
+fn build_client<C>(connector: C) -> Client<C, EmptyBody>
+where
+    C: Connect + Clone + Send + Sync + 'static,
+{
+    Client::builder(TokioExecutor::new()).build(connector)
+}
+
 impl HttpService {
-    fn http_connector() -> HttpConnector {
-        HttpConnector::new()
+    fn http_connector() -> hyper_util::client::legacy::connect::HttpConnector {
+        hyper_util::client::legacy::connect::HttpConnector::new()
     }
 
     #[cfg(feature = "tls")]
-    fn https_connector() -> tls::HttpsConnector<HttpConnector> {
+    fn https_connector() -> tls::HttpsConnector<hyper_util::client::legacy::connect::HttpConnector> {
         tls::HttpsConnector::new()
     }
 
     #[cfg(not(feature = "tls"))]
-    fn https_connector() -> HttpConnector {
-        unreachable!("Cannot use https_connector method without tls feature");
+    fn https_connector() -> hyper_util::client::legacy::connect::HttpConnector {
+        unreachable!("Cannot use https_connector method without tls feature")
     }
 }
 
 #[derive(Debug)]
 struct HttpError {
-    status: hyper::StatusCode,
+    status: http::StatusCode,
 }
 
 impl std::error::Error for HttpError {}
@@ -146,14 +157,6 @@ impl std::error::Error for HttpError {}
 impl fmt::Display for HttpError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.status)
-    }
-}
-
-impl From<hyper::Response<Body>> for HttpError {
-    fn from(res: hyper::Response<Body>) -> Self {
-        Self {
-            status: res.status(),
-        }
     }
 }
 
@@ -178,20 +181,24 @@ impl HttpService {
         })
     }
 
-    pub(crate) fn build_req(&self) -> Request<Body> {
+    pub(crate) fn build_req(&self) -> Request<EmptyBody> {
         Request::builder()
             .method(&self.method)
             .uri(&self.addr)
-            .body(Body::default())
+            .body(EmptyBody::new())
             .expect("Failed to build HTTP request")
     }
 
-    fn handle_res(res: Response<Body>) -> Result<(), Box<dyn DependencyWaitError>> {
+    fn handle_res(
+        res: &Response<hyper::body::Incoming>,
+    ) -> Result<(), Box<dyn DependencyWaitError>> {
         if res.status().is_success() {
             Ok(())
         } else {
             Err(Box::new(NetServiceWaitError::Rejection {
-                error: Box::new(Into::<HttpError>::into(res)),
+                error: Box::new(HttpError {
+                    status: res.status(),
+                }),
             }))
         }
     }
@@ -200,27 +207,20 @@ impl HttpService {
         matches!(self.addr.scheme_str(), Some("https"))
     }
 
-    async fn request<C>(&self, connector: C) -> Result<Response<Body>, hyper::Error>
-    where
-        C: hyper::client::connect::Connect + Clone + Send + Sync + 'static,
-    {
-        let client = Client::builder().build(connector);
-        client.request(self.build_req()).await
-    }
-
     async fn check_with<C>(&self, connector: C) -> Result<(), ()>
     where
-        C: hyper::client::connect::Connect + Clone + Send + Sync + 'static,
+        C: Connect + Clone + Send + Sync + 'static,
     {
-        let res = self.request(connector).await.map_err(|_| ())?;
-        Self::handle_res(res).map_err(|_| ())
+        let client = build_client(connector);
+        let res = client.request(self.build_req()).await.map_err(|_| ())?;
+        Self::handle_res(&res).map_err(|_| ())
     }
 
     async fn wait_with<C>(&self, connector: C) -> Result<(), Box<dyn DependencyWaitError>>
     where
-        C: hyper::client::connect::Connect + Clone + Send + Sync + 'static,
+        C: Connect + Clone + Send + Sync + 'static,
     {
-        let client = Client::builder().build(connector);
+        let client = build_client(connector);
         let start = Instant::now();
 
         loop {
@@ -232,7 +232,7 @@ impl HttpService {
             let req = self.build_req();
 
             match time::timeout(remaining, client.request(req)).await {
-                Ok(Ok(res)) => return Self::handle_res(res),
+                Ok(Ok(res)) => return Self::handle_res(&res),
                 Ok(Err(_)) => (),
                 Err(_) => return Err(Box::new(NetServiceWaitError::Timeout)),
             }
