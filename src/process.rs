@@ -2,7 +2,7 @@ use std::{
     io,
     process::{Output, Stdio},
     sync::{
-        atomic::{AtomicBool, AtomicUsize, Ordering},
+        atomic::{AtomicUsize, Ordering},
         Arc,
     },
     time::{Duration, Instant},
@@ -160,25 +160,14 @@ impl RunningProcess {
             None => return Err(Error::ProcessDoesNotExist),
         };
 
-        let process_exited = Arc::new(AtomicBool::new(false));
+        let mut process_task = task::spawn(async move { process.wait_with_output().await });
 
-        let exit_reason = {
-            let process_exited = process_exited.clone();
-
-            let process_task = task::spawn(async move {
-                let res = process.wait_with_output().await;
-                process_exited.store(true, Ordering::SeqCst);
-                res
-            });
-
-            tokio::select! {
-                result =
-                  process_task =>
-                    TeardownReason::ProcessFinished(
-                      result.unwrap_or_else(|err| Err(io::Error::other(err)))
-                    ),
-                _ = signal::ctrl_c() => TeardownReason::CtrlC,
-            }
+        let exit_reason = tokio::select! {
+            result = &mut process_task =>
+                TeardownReason::ProcessFinished(
+                    result.unwrap_or_else(|err| Err(io::Error::other(err)))
+                ),
+            _ = signal::ctrl_c() => TeardownReason::CtrlC,
         };
 
         match exit_reason {
@@ -191,20 +180,14 @@ impl RunningProcess {
                 }
             }
             TeardownReason::CtrlC => {
-                let res = {
-                    let process_exited = process_exited.clone();
-                    let exit_checker = task::spawn(async move {
-                        loop {
-                            if process_exited.load(Ordering::SeqCst) {
-                                break;
-                            }
-                            task::yield_now().await;
+                let res = tokio::select! {
+                    result = &mut process_task => {
+                        match result {
+                            Ok(Ok(output)) if output.status.success() => CtrlCResult::ProcessExited,
+                            _ => CtrlCResult::ProcessExited,
                         }
-                    });
-                    tokio::select! {
-                        _ = exit_checker => CtrlCResult::ProcessExited,
-                        _ = time::sleep(*self.timeout) => CtrlCResult::Timeout,
                     }
+                    _ = time::sleep(*self.timeout) => CtrlCResult::Timeout,
                 };
 
                 match res {
@@ -279,24 +262,26 @@ impl RunningProcess {
         match self.process.id() {
             None => Err(Error::ProcessDoesNotExist),
             Some(pid) => {
-                // Attempt graceful shutdown via CTRL_BREAK_EVENT
-                // Note: This works best when the process was created with CREATE_NEW_PROCESS_GROUP
-                unsafe { GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pid) };
-
-                let process = &mut self.process;
-                let res = tokio::select! {
-                    res = process.wait() => Some(res),
-                    _ = time::sleep(*self.timeout) => None,
-                };
-
-                match res {
-                    Some(Ok(_)) => Ok(()),
-                    _ => {
-                        // TODO: When group=true, this only kills the leader PID.
-                        // Proper process group termination on Windows requires Job Objects.
-                        Self::kill(pid)
+                if self.group {
+                    // Process has its own group (CREATE_NEW_PROCESS_GROUP), safe to send CTRL_BREAK_EVENT
+                    let ok = unsafe { GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pid) };
+                    if ok != 0 {
+                        // Event delivered, wait for graceful exit
+                        let process = &mut self.process;
+                        let res = tokio::select! {
+                            res = process.wait() => Some(res),
+                            _ = time::sleep(*self.timeout) => None,
+                        };
+                        if let Some(Ok(_)) = res {
+                            return Ok(());
+                        }
                     }
+                    // Event failed or timed out, fall through to forced termination
                 }
+                // No group or graceful shutdown failed: terminate immediately
+                // TODO: When group=true, this only kills the leader PID.
+                // Proper process group termination on Windows requires Job Objects.
+                Self::kill(pid)
             }
         }
     }
