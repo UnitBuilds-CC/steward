@@ -44,9 +44,10 @@ fn kill_timeout(c: &mut Criterion) {
 }
 
 fn shelled(c: &mut Criterion) {
-    c.bench_function("shelled_array", |b| {
+    let mut group = c.benchmark_group("shelled");
+
+    group.bench_function("array_stack", |b| {
         b.iter(|| {
-            // This benchmarks the stack-allocated [&str; 2] approach
             let cmd = black_box("echo hello world");
             let result: [&str; 2] = if cfg!(unix) {
                 ["-c", cmd]
@@ -56,6 +57,20 @@ fn shelled(c: &mut Criterion) {
             black_box(result)
         })
     });
+
+    group.bench_function("vec_heap", |b| {
+        b.iter(|| {
+            let cmd = black_box("echo hello world");
+            let result: Vec<&str> = if cfg!(unix) {
+                vec!["-c", cmd]
+            } else {
+                vec!["/c", cmd]
+            };
+            black_box(result)
+        })
+    });
+
+    group.finish();
 }
 
 fn headline(c: &mut Criterion) {
