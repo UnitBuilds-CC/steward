@@ -206,7 +206,6 @@ where
     }
 
     /// A low-level method for spawning a process and getting a handle to it.
-    #[cfg(unix)]
     pub fn spawn(&self, opts: SpawnOptions) -> io::Result<RunningProcess> {
         let cmd = self;
 
@@ -226,37 +225,11 @@ where
             .stderr(stderr);
 
         if group {
+            #[cfg(unix)]
             command.process_group(0);
+            #[cfg(windows)]
+            command.creation_flags(windows_sys::Win32::System::Threading::CREATE_NEW_PROCESS_GROUP);
         }
-
-        let process = command.spawn()?;
-
-        Ok(RunningProcess {
-            process,
-            timeout,
-            group,
-        })
-    }
-
-    /// A low-level method for spawning a process and getting a handle to it.
-    #[cfg(windows)]
-    pub fn spawn(&self, opts: SpawnOptions) -> io::Result<RunningProcess> {
-        let cmd = self;
-
-        let SpawnOptions {
-            stdout,
-            stderr,
-            timeout,
-            group,
-        } = opts;
-
-        let mut command = Command::new(Cmd::<Loc>::SHELL);
-        command
-            .args(Cmd::<Loc>::shelled(&cmd.exe))
-            .envs(cmd.env.to_owned())
-            .current_dir(cmd.pwd.as_path())
-            .stdout(stdout)
-            .stderr(stderr);
 
         let process = command.spawn()?;
 

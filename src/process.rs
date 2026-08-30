@@ -264,7 +264,37 @@ impl RunningProcess {
         }
     }
 
-    // TODO: Implement RunningProcess::stop for windows
+    /// Tries to safely terminate a running process. If the termination didn't succeed, tries to kill it.
+    #[cfg(windows)]
+    pub async fn stop(mut self) -> Result<()> {
+        use windows_sys::Win32::System::Console::{
+            GenerateConsoleCtrlEvent, CTRL_BREAK_EVENT,
+        };
+
+        match self.process.id() {
+            None => Err(Error::ProcessDoesNotExist),
+            Some(pid) => {
+                if self.group {
+                    unsafe { GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pid) };
+                }
+
+                let process = &mut self.process;
+                let res = if self.group {
+                    tokio::select! {
+                        res = process.wait() => Some(res),
+                        _ = time::sleep(*self.timeout) => None,
+                    }
+                } else {
+                    None
+                };
+
+                match res {
+                    Some(Ok(_)) => Ok(()),
+                    _ => Self::kill(pid),
+                }
+            }
+        }
+    }
 
     #[cfg(unix)]
     pub(crate) fn kill(pid: u32) -> Result<()> {
