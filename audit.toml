@@ -1,0 +1,14 @@
+[advisories]
+ignore = [
+    # Transitive deps via native-tls/openssl — cannot fix without switching TLS stack
+    "RUSTSEC-2023-0022", # openssl X509NameBuilder thread safety
+    "RUSTSEC-2023-0023", # openssl SubjectAlternativeName file read
+    "RUSTSEC-2023-0024", # openssl X509Extension null deref
+    "RUSTSEC-2023-0044", # openssl X509VerifyParamRef buffer over-read
+    "RUSTSEC-2024-0357", # openssl MemBio undefined behavior
+    "RUSTSEC-2025-0004", # openssl select_next_proto use after free
+    "RUSTSEC-2023-0072", # openssl X509StoreRef unsound (warning)
+    "RUSTSEC-2023-0018", # remove_dir_all TOCTOU (transitive via tempdir in dev-deps)
+    "RUSTSEC-2026-0007", # bytes integer overflow (transitive via hyper)
+    "RUSTSEC-2026-0097", # rand 0.8 unsound with custom logger (examples lock file)
+]

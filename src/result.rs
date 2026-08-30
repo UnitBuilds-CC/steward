@@ -106,6 +106,9 @@ mod tests {
 
     #[test]
     fn error_zombie_display() {
+        #[cfg(unix)]
+        let err = Error::Zombie { pid: 42, err: nix::errno::Errno::EPERM };
+        #[cfg(windows)]
         let err = Error::Zombie { pid: 42, err: 5 };
         let msg = err.to_string();
         assert!(msg.contains("42"));
