@@ -62,17 +62,26 @@ jobs:
       - name: Install cargo-audit
         run: cargo install cargo-audit
 
+      # Audit suppressions — all transitive dependencies with no patched release available:
+      #   RUSTSEC-2023-0022: openssl X509NameBuilder::build not thread-safe (via hyper-tls)
+      #   RUSTSEC-2023-0023: openssl SAN/ExtendedKeyUsage injection (via hyper-tls)
+      #   RUSTSEC-2023-0024: openssl crash on None context arg (via hyper-tls)
+      #   RUSTSEC-2023-0044: openssl buffer over-read in set_host <0.10.55 (via hyper-tls)
+      #   RUSTSEC-2023-0072: openssl X509StoreRef::objects aliasing (via hyper-tls)
+      #   RUSTSEC-2023-0018: remove_dir_all symlink TOCTOU race (transitive dev-dep)
+      #   RUSTSEC-2024-0357: openssl MemBio::get_buf UB on empty buffer (via hyper-tls)
+      #   RUSTSEC-2025-0004: openssl lifetime mismatch in protocol selection (via hyper-tls)
       - name: Run cargo audit
         run: >
           cargo audit
-          --ignore RUSTSEC-2023-0022 # openssl: X509NameBuilder::build not thread-safe; transitive via hyper-tls, no patched release
-          --ignore RUSTSEC-2023-0023 # openssl: SAN/ExtendedKeyUsage injection; transitive via hyper-tls, no patched release
-          --ignore RUSTSEC-2023-0024 # openssl: crash on None context arg; transitive via hyper-tls, no patched release
-          --ignore RUSTSEC-2023-0044 # openssl: buffer over-read in set_host (<0.10.55); transitive via hyper-tls, no patched release
-          --ignore RUSTSEC-2023-0072 # openssl: X509StoreRef::objects aliasing; transitive via hyper-tls, no patched release
-          --ignore RUSTSEC-2023-0018 # remove_dir_all: symlink TOCTOU race; transitive dev-dep, no patched release
-          --ignore RUSTSEC-2024-0357 # openssl: MemBio::get_buf UB on empty buffer; transitive via hyper-tls, no patched release
-          --ignore RUSTSEC-2025-0004 # openssl: lifetime mismatch in protocol selection; transitive via hyper-tls, no patched release
+          --ignore RUSTSEC-2023-0022
+          --ignore RUSTSEC-2023-0023
+          --ignore RUSTSEC-2023-0024
+          --ignore RUSTSEC-2023-0044
+          --ignore RUSTSEC-2023-0072
+          --ignore RUSTSEC-2023-0018
+          --ignore RUSTSEC-2024-0357
+          --ignore RUSTSEC-2025-0004
 
   msrv:
     name: MSRV Check

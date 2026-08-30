@@ -126,6 +126,7 @@ macro_rules! process {
 pub struct RunningProcess {
     pub(crate) process: Child,
     pub(crate) timeout: KillTimeout,
+    #[allow(dead_code)]
     pub(crate) group: bool,
 }
 
@@ -278,23 +279,23 @@ impl RunningProcess {
         match self.process.id() {
             None => Err(Error::ProcessDoesNotExist),
             Some(pid) => {
-                if self.group {
-                    unsafe { GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pid) };
-                }
+                // Attempt graceful shutdown via CTRL_BREAK_EVENT
+                // Note: This works best when the process was created with CREATE_NEW_PROCESS_GROUP
+                unsafe { GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pid) };
 
                 let process = &mut self.process;
-                let res = if self.group {
-                    tokio::select! {
-                        res = process.wait() => Some(res),
-                        _ = time::sleep(*self.timeout) => None,
-                    }
-                } else {
-                    None
+                let res = tokio::select! {
+                    res = process.wait() => Some(res),
+                    _ = time::sleep(*self.timeout) => None,
                 };
 
                 match res {
                     Some(Ok(_)) => Ok(()),
-                    _ => Self::kill(pid),
+                    _ => {
+                        // TODO: When group=true, this only kills the leader PID.
+                        // Proper process group termination on Windows requires Job Objects.
+                        Self::kill(pid)
+                    }
                 }
             }
         }
@@ -569,13 +570,14 @@ impl ProcessPool {
                             task::spawn({
                                 let tag = colored_tag_col.clone();
                                 async move {
-                                    let mut buf = String::new();
+                                    let mut buf = Vec::new();
                                     loop {
                                         buf.clear();
-                                        match reader.read_line(&mut buf).await {
+                                        match reader.read_until(b'\n', &mut buf).await {
                                             Ok(0) => break,
                                             Ok(_) => {
-                                                eprintln!("{} {}", tag, buf.trim_end());
+                                                let line = String::from_utf8_lossy(&buf);
+                                                eprintln!("{} {}", tag, line.trim_end());
                                             }
                                             Err(_) => break,
                                         }
@@ -595,13 +597,14 @@ impl ProcessPool {
                             task::spawn({
                                 let tag = colored_tag_col.clone();
                                 async move {
-                                    let mut buf = String::new();
+                                    let mut buf = Vec::new();
                                     loop {
                                         buf.clear();
-                                        match reader.read_line(&mut buf).await {
+                                        match reader.read_until(b'\n', &mut buf).await {
                                             Ok(0) => break,
                                             Ok(_) => {
-                                                eprintln!("{} {}", tag, buf.trim_end());
+                                                let line = String::from_utf8_lossy(&buf);
+                                                eprintln!("{} {}", tag, line.trim_end());
                                             }
                                             Err(_) => break,
                                         }

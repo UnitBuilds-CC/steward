@@ -169,13 +169,18 @@ mod tests {
     }
 
     #[test]
-    fn env_parent_contains_current_process_env() {
+    fn env_parent_matches_current_process_env() {
         let env = Env::parent();
-        assert!(
-            env.get("PATH").is_some(),
-            "PATH should be set in the process environment"
-        );
-        assert!(env.into_iter().count() > 0);
+        let actual: std::collections::HashMap<String, String> = std::env::vars().collect();
+        assert_eq!((&env).into_iter().count(), actual.len());
+        for (k, v) in &actual {
+            assert_eq!(
+                env.get(k).map(|s| s.as_str()),
+                Some(v.as_str()),
+                "mismatch on key {}",
+                k
+            );
+        }
     }
 
     #[test]
