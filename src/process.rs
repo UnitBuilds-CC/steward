@@ -518,9 +518,16 @@ impl ProcessPool {
                         ..Default::default()
                     };
 
-                    let mut process = process.spawn(opts).await.unwrap_or_else(|err| {
-                        panic!("Failed to spawn {} process. {}", colored_tag, err)
-                    });
+                    let mut process = match process.spawn(opts).await {
+                        Ok(p) => p,
+                        Err(err) => {
+                            eprintln!(
+                                "{} Failed to spawn {} process: {}",
+                                colored_tag_col, colored_tag, err
+                            );
+                            return;
+                        }
+                    };
 
                     match process.stdout() {
                         None => eprintln!(

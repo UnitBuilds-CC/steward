@@ -181,12 +181,11 @@ impl HttpService {
         })
     }
 
-    pub(crate) fn build_req(&self) -> Request<EmptyBody> {
+    pub(crate) fn build_req(&self) -> Result<Request<EmptyBody>, http::Error> {
         Request::builder()
             .method(&self.method)
             .uri(&self.addr)
             .body(EmptyBody::new())
-            .expect("Failed to build HTTP request")
     }
 
     fn handle_res(
@@ -212,7 +211,8 @@ impl HttpService {
         C: Connect + Clone + Send + Sync + 'static,
     {
         let client = build_client(connector);
-        let res = client.request(self.build_req()).await.map_err(|_| ())?;
+        let req = self.build_req().map_err(|_| ())?;
+        let res = client.request(req).await.map_err(|_| ())?;
         Self::handle_res(&res).map_err(|_| ())
     }
 
@@ -229,7 +229,14 @@ impl HttpService {
                 return Err(Box::new(NetServiceWaitError::Timeout));
             }
 
-            let req = self.build_req();
+            let req = match self.build_req() {
+                Ok(req) => req,
+                Err(err) => {
+                    return Err(Box::new(NetServiceWaitError::Rejection {
+                        error: Box::new(err),
+                    }));
+                }
+            };
 
             match time::timeout(remaining, client.request(req)).await {
                 Ok(Ok(res)) => return Self::handle_res(&res),
