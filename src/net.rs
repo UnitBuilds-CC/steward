@@ -139,7 +139,8 @@ impl HttpService {
     }
 
     #[cfg(feature = "tls")]
-    fn https_connector() -> tls::HttpsConnector<hyper_util::client::legacy::connect::HttpConnector> {
+    fn https_connector() -> tls::HttpsConnector<hyper_util::client::legacy::connect::HttpConnector>
+    {
         tls::HttpsConnector::new()
     }
 

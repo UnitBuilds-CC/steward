@@ -270,9 +270,7 @@ impl RunningProcess {
     /// Tries to safely terminate a running process. If the termination didn't succeed, tries to kill it.
     #[cfg(windows)]
     pub async fn stop(mut self) -> Result<()> {
-        use windows_sys::Win32::System::Console::{
-            GenerateConsoleCtrlEvent, CTRL_BREAK_EVENT,
-        };
+        use windows_sys::Win32::System::Console::{GenerateConsoleCtrlEvent, CTRL_BREAK_EVENT};
 
         match self.process.id() {
             None => Err(Error::ProcessDoesNotExist),
@@ -363,7 +361,10 @@ impl<Loc: std::fmt::Debug, Dep: std::fmt::Debug + ?Sized> std::fmt::Debug for Po
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Process(process) => f.debug_tuple("Process").field(process).finish(),
-            Self::ProcessWithDep { process, dependency } => f
+            Self::ProcessWithDep {
+                process,
+                dependency,
+            } => f
                 .debug_struct("ProcessWithDep")
                 .field("process", process)
                 .field("dependency", dependency)
@@ -460,7 +461,10 @@ impl ProcessPool {
             .iter()
             .map(|(entry, color)| {
                 let process = entry.process();
-                console::style(process.tag().to_string()).fg(*color).bold().to_string()
+                console::style(process.tag().to_string())
+                    .fg(*color)
+                    .bold()
+                    .to_string()
             })
             .collect::<Vec<_>>()
             .join(", ");
@@ -664,7 +668,7 @@ impl ProcessPool {
 
 mod colors {
     use console::Color;
-    use rand::{seq::SliceRandom, rng};
+    use rand::{rng, seq::SliceRandom};
 
     pub fn make(n: u8) -> Vec<Color> {
         let palette = vec![

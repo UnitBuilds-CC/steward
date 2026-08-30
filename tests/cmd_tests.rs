@@ -1,7 +1,7 @@
 mod common;
 
-use steward::{Cmd, Env};
 use common::Loc;
+use steward::{Cmd, Env};
 
 #[tokio::test]
 async fn cmd_run_succeeds() {

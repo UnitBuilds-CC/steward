@@ -1,13 +1,11 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use steward::{Env, env::PATH};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::HashMap;
+use steward::{env::PATH, Env};
 
 fn env_construction(c: &mut Criterion) {
     let mut group = c.benchmark_group("env_construction");
 
-    group.bench_function("empty", |b| {
-        b.iter(Env::empty)
-    });
+    group.bench_function("empty", |b| b.iter(Env::empty));
 
     group.bench_function("one", |b| {
         b.iter(|| Env::one(black_box("KEY"), black_box("VALUE")))
@@ -16,7 +14,11 @@ fn env_construction(c: &mut Criterion) {
     group.bench_function("from_vec_5", |b| {
         b.iter(|| {
             Env::from_vec(vec![
-                ("A", "1"), ("B", "2"), ("C", "3"), ("D", "4"), ("E", "5"),
+                ("A", "1"),
+                ("B", "2"),
+                ("C", "3"),
+                ("D", "4"),
+                ("E", "5"),
             ])
         })
     });
@@ -27,7 +29,10 @@ fn env_construction(c: &mut Criterion) {
             .collect();
         b.iter(|| {
             Env::from_vec(
-                pairs.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect::<Vec<_>>()
+                pairs
+                    .iter()
+                    .map(|(k, v)| (k.as_str(), v.as_str()))
+                    .collect::<Vec<_>>(),
             )
         })
     });
@@ -48,7 +53,9 @@ fn env_clone_vs_ref(c: &mut Criterion) {
 
     for size in [5, 10, 20, 50] {
         let env = Env::from_vec(
-            (0..size).map(|i| (format!("KEY_{i}"), format!("VAL_{i}"))).collect::<Vec<_>>()
+            (0..size)
+                .map(|i| (format!("KEY_{i}"), format!("VAL_{i}")))
+                .collect::<Vec<_>>(),
         );
 
         group.bench_with_input(BenchmarkId::new("clone", size), &size, |b, _| {
@@ -131,9 +138,7 @@ fn path_operations(c: &mut Criterion) {
         b.iter(|| PATH::extend(black_box("/custom/bin")))
     });
 
-    c.bench_function("path_get", |b| {
-        b.iter(PATH::get)
-    });
+    c.bench_function("path_get", |b| b.iter(PATH::get));
 }
 
 criterion_group!(

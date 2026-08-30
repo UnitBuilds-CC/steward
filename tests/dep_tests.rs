@@ -1,8 +1,8 @@
 mod common;
 
+use common::Loc;
 use std::time::Duration;
 use steward::{Dependency, FsEntry, Location};
-use common::Loc;
 
 #[tokio::test]
 async fn fs_entry_check_existing_file() {
@@ -74,7 +74,14 @@ async fn fs_entry_wait_creates_file_during_wait() {
 async fn tcp_service_check_unreachable_port() {
     use steward::TcpService;
 
-    let service = TcpService::new("test", "127.0.0.1", "19999", Duration::from_millis(200), None).unwrap();
+    let service = TcpService::new(
+        "test",
+        "127.0.0.1",
+        "19999",
+        Duration::from_millis(200),
+        None,
+    )
+    .unwrap();
     assert!(service.check().await.is_err());
 }
 
@@ -82,7 +89,14 @@ async fn tcp_service_check_unreachable_port() {
 async fn tcp_service_wait_unreachable_times_out() {
     use steward::TcpService;
 
-    let service = TcpService::new("test", "127.0.0.1", "19999", Duration::from_millis(500), None).unwrap();
+    let service = TcpService::new(
+        "test",
+        "127.0.0.1",
+        "19999",
+        Duration::from_millis(500),
+        None,
+    )
+    .unwrap();
     let result = service.wait().await;
     assert!(result.is_err());
 }
@@ -91,13 +105,20 @@ async fn tcp_service_wait_unreachable_times_out() {
 async fn tcp_service_tag() {
     use steward::TcpService;
 
-    let service = TcpService::new("my_service", "127.0.0.1", "8080", Duration::from_secs(1), None).unwrap();
+    let service = TcpService::new(
+        "my_service",
+        "127.0.0.1",
+        "8080",
+        Duration::from_secs(1),
+        None,
+    )
+    .unwrap();
     assert_eq!(service.tag(), "my_service");
 }
 
 #[tokio::test]
 async fn http_service_tag() {
-    use steward::{HttpService, HttpMethod};
+    use steward::{HttpMethod, HttpService};
 
     let service = HttpService::new(
         "my_http",

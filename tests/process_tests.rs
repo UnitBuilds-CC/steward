@@ -1,8 +1,8 @@
 mod common;
 
+use common::Loc;
 use std::time::Duration;
 use steward::{Cmd, Env, KillTimeout, Process, SpawnOptions};
-use common::Loc;
 
 #[tokio::test]
 async fn process_spawn_and_stop() {

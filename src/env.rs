@@ -219,7 +219,13 @@ mod tests {
         let env = Env::from_vec(vec![("A", "1"), ("B", "2")]);
         let mut items: Vec<(String, String)> = env.into_iter().collect();
         items.sort_by(|a, b| a.0.cmp(&b.0));
-        assert_eq!(items, vec![("A".to_string(), "1".to_string()), ("B".to_string(), "2".to_string())]);
+        assert_eq!(
+            items,
+            vec![
+                ("A".to_string(), "1".to_string()),
+                ("B".to_string(), "2".to_string())
+            ]
+        );
     }
 
     #[test]

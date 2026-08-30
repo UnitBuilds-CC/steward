@@ -1,8 +1,8 @@
 mod common;
 
+use common::Loc;
 use std::time::Duration;
 use steward::{Cmd, Env, KillTimeout, Location, PoolEntry, Process, ProcessPool};
-use common::Loc;
 
 fn make_quick_process(tag: &'static str, cmd_str: &str) -> Process<Loc> {
     Process::new(
@@ -70,7 +70,10 @@ fn pool_entry_process_with_dep_variant() {
     };
 
     match entry {
-        PoolEntry::ProcessWithDep { process, dependency } => {
+        PoolEntry::ProcessWithDep {
+            process,
+            dependency,
+        } => {
             assert_eq!(process.tag(), "test");
             assert_eq!(dependency.tag(), "cargo_toml");
         }
@@ -126,10 +129,16 @@ async fn pool_process_bad_command_exits_with_error() {
     };
 
     let running = bad_process.spawn(opts).await;
-    assert!(running.is_ok(), "Shell spawn succeeds even for bad commands");
+    assert!(
+        running.is_ok(),
+        "Shell spawn succeeds even for bad commands"
+    );
 
     let result = running.unwrap().into_child().wait().await.unwrap();
-    assert!(!result.success(), "Bad command should exit with non-zero code");
+    assert!(
+        !result.success(),
+        "Bad command should exit with non-zero code"
+    );
 }
 
 #[tokio::test]

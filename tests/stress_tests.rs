@@ -1,8 +1,8 @@
 mod common;
 
+use common::Loc;
 use std::time::Duration;
 use steward::{Cmd, Env, KillTimeout, Process, SpawnOptions};
-use common::Loc;
 
 #[tokio::test]
 async fn rapid_spawn_and_kill_cycle() {
@@ -99,7 +99,8 @@ async fn concurrent_output_capture() {
         let expected = format!("concurrent_{}", i);
         assert!(
             results.iter().any(|text| text.contains(&expected)),
-            "Missing output for iteration {}", i
+            "Missing output for iteration {}",
+            i
         );
     }
 }
@@ -118,7 +119,11 @@ async fn spawn_with_process_group_rapid() {
             msg: None,
         };
 
-        let process = Process::new("group_stress", cmd, KillTimeout::new(Duration::from_secs(5)));
+        let process = Process::new(
+            "group_stress",
+            cmd,
+            KillTimeout::new(Duration::from_secs(5)),
+        );
         let opts = SpawnOptions {
             stdout: std::process::Stdio::null(),
             stderr: std::process::Stdio::null(),
