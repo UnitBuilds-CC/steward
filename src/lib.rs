@@ -80,6 +80,18 @@
 //! ## Limitations
 //! ### Async runtimes
 //! Tokio only.
+//!
+//! ## Security
+//!
+//! Commands specified via [`Cmd`] are executed through the system shell
+//! (`/bin/sh -c` on Unix, `cmd /c` on Windows). This means shell metacharacters
+//! in the `exe` field will be interpreted by the shell. Do not pass untrusted
+//! input directly as a command string — sanitize or escape it first.
+//!
+//! Child processes inherit the environment variables you provide via [`Env`].
+//! There is no sandboxing: spawned processes have the same OS-level permissions
+//! as the parent process. Do not run steward with elevated privileges unless
+//! you trust all commands and their transitive dependencies.
 
 /// Base building block of the crate.
 ///
