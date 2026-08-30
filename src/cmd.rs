@@ -753,3 +753,63 @@ mod tests {
         cmd! { exe: "ls", env: env, pwd: loc }
     }
 }
+
+#[cfg(test)]
+mod timeout_tests {
+    use super::*;
+
+    #[test]
+    fn kill_timeout_default_is_10_seconds() {
+        let timeout = KillTimeout::default();
+        assert_eq!(timeout.duration(), Duration::from_secs(10));
+    }
+
+    #[test]
+    fn kill_timeout_new() {
+        let timeout = KillTimeout::new(Duration::from_secs(30));
+        assert_eq!(timeout.duration(), Duration::from_secs(30));
+    }
+
+    #[test]
+    fn kill_timeout_from_duration() {
+        let timeout: KillTimeout = Duration::from_secs(5).into();
+        assert_eq!(timeout.duration(), Duration::from_secs(5));
+    }
+
+    #[test]
+    fn kill_timeout_deref_to_duration() {
+        let timeout = KillTimeout::new(Duration::from_secs(15));
+        let dur: &Duration = &*timeout;
+        assert_eq!(*dur, Duration::from_secs(15));
+    }
+
+    #[test]
+    fn kill_timeout_clone() {
+        let timeout = KillTimeout::new(Duration::from_secs(7));
+        let cloned = timeout.clone();
+        assert_eq!(cloned.duration(), Duration::from_secs(7));
+    }
+}
+
+#[cfg(test)]
+mod output_tests {
+    use super::*;
+
+    #[test]
+    fn output_bytes() {
+        let output = Output(b"hello".to_vec());
+        assert_eq!(output.bytes(), b"hello");
+    }
+
+    #[test]
+    fn output_as_string_valid_utf8() {
+        let output = Output(b"hello world".to_vec());
+        assert_eq!(output.as_string().unwrap(), "hello world");
+    }
+
+    #[test]
+    fn output_as_string_invalid_utf8() {
+        let output = Output(vec![0xff, 0xfe]);
+        assert!(output.as_string().is_err());
+    }
+}

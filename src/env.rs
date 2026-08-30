@@ -122,3 +122,121 @@ impl PATH {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn env_empty() {
+        let env = Env::empty();
+        assert!(env.get("anything").is_none());
+        assert_eq!(env.into_iter().count(), 0);
+    }
+
+    #[test]
+    fn env_new_from_hashmap() {
+        let mut map = HashMap::new();
+        map.insert("KEY".to_string(), "VALUE".to_string());
+        let env = Env::new(map);
+        assert_eq!(env.get("KEY").map(|s| s.as_str()), Some("VALUE"));
+    }
+
+    #[test]
+    fn env_from_vec() {
+        let env = Env::from_vec(vec![("A", "1"), ("B", "2")]);
+        assert_eq!(env.get("A").map(|s| s.as_str()), Some("1"));
+        assert_eq!(env.get("B").map(|s| s.as_str()), Some("2"));
+        assert_eq!(env.into_iter().count(), 2);
+    }
+
+    #[test]
+    fn env_one() {
+        let env = Env::one("KEY", "VALUE");
+        assert_eq!(env.get("KEY").map(|s| s.as_str()), Some("VALUE"));
+        assert_eq!(env.into_iter().count(), 1);
+    }
+
+    #[test]
+    fn env_parent_contains_current_process_env() {
+        std::env::set_var("STEWARD_TEST_VAR", "steward_test_value");
+        let env = Env::parent();
+        assert_eq!(
+            env.get("STEWARD_TEST_VAR").map(|s| s.as_str()),
+            Some("steward_test_value")
+        );
+        std::env::remove_var("STEWARD_TEST_VAR");
+    }
+
+    #[test]
+    fn env_insert() {
+        let env = Env::empty().insert("A", "1").insert("B", "2");
+        assert_eq!(env.get("A").map(|s| s.as_str()), Some("1"));
+        assert_eq!(env.get("B").map(|s| s.as_str()), Some("2"));
+    }
+
+    #[test]
+    fn env_insert_cloned_does_not_mutate_original() {
+        let env = Env::one("A", "1");
+        let extended = env.insert_cloned("B", "2");
+        assert!(env.get("B").is_none());
+        assert_eq!(extended.get("A").map(|s| s.as_str()), Some("1"));
+        assert_eq!(extended.get("B").map(|s| s.as_str()), Some("2"));
+    }
+
+    #[test]
+    fn env_extend() {
+        let a = Env::one("A", "1");
+        let b = Env::one("B", "2");
+        let merged = a.extend(b);
+        assert_eq!(merged.get("A").map(|s| s.as_str()), Some("1"));
+        assert_eq!(merged.get("B").map(|s| s.as_str()), Some("2"));
+    }
+
+    #[test]
+    fn env_extend_cloned_does_not_mutate_original() {
+        let a = Env::one("A", "1");
+        let b = Env::one("B", "2");
+        let merged = a.extend_cloned(b);
+        assert!(a.get("B").is_none());
+        assert_eq!(merged.get("A").map(|s| s.as_str()), Some("1"));
+        assert_eq!(merged.get("B").map(|s| s.as_str()), Some("2"));
+    }
+
+    #[test]
+    fn env_into_iterator_owned() {
+        let env = Env::from_vec(vec![("A", "1"), ("B", "2")]);
+        let mut items: Vec<(String, String)> = env.into_iter().collect();
+        items.sort_by(|a, b| a.0.cmp(&b.0));
+        assert_eq!(items, vec![("A".to_string(), "1".to_string()), ("B".to_string(), "2".to_string())]);
+    }
+
+    #[test]
+    fn env_into_iterator_borrowed() {
+        let env = Env::from_vec(vec![("A", "1"), ("B", "2")]);
+        let mut items: Vec<(&str, &str)> = (&env).into_iter().collect();
+        items.sort_by(|a, b| a.0.cmp(&b.0));
+        assert_eq!(items, vec![("A", "1"), ("B", "2")]);
+    }
+
+    #[test]
+    fn env_clone_is_independent() {
+        let env = Env::one("A", "1");
+        let cloned = env.clone().insert("B", "2");
+        assert!(env.get("B").is_none());
+        assert_eq!(cloned.get("B").map(|s| s.as_str()), Some("2"));
+    }
+
+    #[test]
+    fn path_get_returns_some() {
+        assert!(PATH::get().is_some());
+    }
+
+    #[test]
+    fn path_extend_appends_to_existing() {
+        let extended = PATH::extend("/custom/bin");
+        assert!(extended.contains("/custom/bin"));
+        assert!(extended.len() > "/custom/bin".len());
+    }
+}

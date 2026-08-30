@@ -74,3 +74,78 @@ impl From<process::Output> for Error {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn error_io_error_display() {
+        let err = Error::IoError(io::Error::new(io::ErrorKind::NotFound, "file missing"));
+        assert_eq!(err.to_string(), "IO error: file missing");
+    }
+
+    #[test]
+    fn error_interrupted_display() {
+        let err = Error::Interrupted;
+        assert_eq!(err.to_string(), "Interrupted.");
+    }
+
+    #[test]
+    fn error_killed_display() {
+        let err = Error::Killed { pid: 1234 };
+        assert_eq!(err.to_string(), "Killed [pid: 1234].");
+    }
+
+    #[test]
+    fn error_process_does_not_exist_display() {
+        let err = Error::ProcessDoesNotExist;
+        assert_eq!(err.to_string(), "Process does not exist.");
+    }
+
+    #[test]
+    fn error_zombie_display() {
+        let err = Error::Zombie { pid: 42, err: 5 };
+        let msg = err.to_string();
+        assert!(msg.contains("42"));
+    }
+
+    #[test]
+    fn from_io_error() {
+        let io_err = io::Error::new(io::ErrorKind::PermissionDenied, "no access");
+        let err: Error = io_err.into();
+        assert!(matches!(err, Error::IoError(_)));
+        assert_eq!(err.to_string(), "IO error: no access");
+    }
+
+    #[test]
+    fn from_utf8_error() {
+        let bad_bytes = vec![0xff, 0xfe];
+        let utf8_err = String::from_utf8(bad_bytes).unwrap_err();
+        let err: Error = utf8_err.into();
+        assert!(matches!(err, Error::IoError(_)));
+    }
+
+    #[test]
+    fn from_process_output_nonzero_exit() {
+        use std::process::{ExitStatus, Output};
+        #[cfg(unix)]
+        use std::os::unix::process::ExitStatusExt;
+
+        #[cfg(unix)]
+        let status = ExitStatus::from_raw(256);
+        #[cfg(windows)]
+        let status = {
+            use std::os::windows::process::ExitStatusExt;
+            ExitStatus::from_raw(1)
+        };
+
+        let output = Output {
+            status,
+            stdout: b"out".to_vec(),
+            stderr: b"err".to_vec(),
+        };
+        let err: Error = output.into();
+        assert!(matches!(err, Error::NonZeroExitCode { .. }));
+    }
+}
