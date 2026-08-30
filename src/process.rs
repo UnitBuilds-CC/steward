@@ -140,14 +140,17 @@ impl RunningProcess {
         self.process
     }
 
+    /// Takes the stdout handle from the child process.
     pub(crate) fn stdout(&mut self) -> Option<ChildStdout> {
         self.process.stdout.take()
     }
 
+    /// Takes the stderr handle from the child process.
     pub(crate) fn stderr(&mut self) -> Option<ChildStderr> {
         self.process.stderr.take()
     }
 
+    /// Waits for the process to exit, handling Ctrl+C gracefully.
     pub(crate) async fn wait(self) -> Result<Output> {
         let process = self.process;
 
@@ -298,6 +301,7 @@ impl RunningProcess {
     }
 
     #[cfg(unix)]
+    /// Forcefully terminates a process by PID using `SIGKILL`.
     pub(crate) fn kill(pid: u32) -> Result<()> {
         use nix::{
             sys::signal::{self, Signal},
@@ -309,6 +313,7 @@ impl RunningProcess {
     }
 
     #[cfg(windows)]
+    /// Forcefully terminates a process by PID using `TerminateProcess`.
     pub(crate) fn kill(pid: u32) -> Result<()> {
         use windows_sys::Win32::{
             Foundation::{CloseHandle, GetLastError, FALSE, HANDLE},

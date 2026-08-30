@@ -126,6 +126,7 @@ pub struct HttpService {
 
 type EmptyBody = Empty<Bytes>;
 
+/// Builds an HTTP client with the provided connector.
 fn build_client<C>(connector: C) -> Client<C, EmptyBody>
 where
     C: Connect + Clone + Send + Sync + 'static,
@@ -134,17 +135,20 @@ where
 }
 
 impl HttpService {
+    /// Returns a plain HTTP connector.
     fn http_connector() -> hyper_util::client::legacy::connect::HttpConnector {
         hyper_util::client::legacy::connect::HttpConnector::new()
     }
 
     #[cfg(feature = "tls")]
+    /// Returns an HTTPS connector with TLS support.
     fn https_connector() -> tls::HttpsConnector<hyper_util::client::legacy::connect::HttpConnector>
     {
         tls::HttpsConnector::new()
     }
 
     #[cfg(not(feature = "tls"))]
+    /// Returns a plain HTTP connector (TLS feature disabled).
     fn https_connector() -> hyper_util::client::legacy::connect::HttpConnector {
         unreachable!("Cannot use https_connector method without tls feature")
     }
@@ -184,6 +188,7 @@ impl HttpService {
         })
     }
 
+    /// Constructs an HTTP request for the dependency check.
     pub(crate) fn build_req(&self) -> Result<Request<EmptyBody>, http::Error> {
         Request::builder()
             .method(&self.method)
@@ -191,6 +196,7 @@ impl HttpService {
             .body(EmptyBody::new())
     }
 
+    /// Checks the HTTP response and returns an error for non-success status codes.
     fn handle_res(
         res: &Response<hyper::body::Incoming>,
     ) -> Result<(), Box<dyn DependencyWaitError>> {
@@ -205,10 +211,12 @@ impl HttpService {
         }
     }
 
+    /// Returns true if the service address uses the `https` scheme.
     fn is_https(&self) -> bool {
         matches!(self.addr.scheme_str(), Some("https"))
     }
 
+    /// Performs a single dependency check using the provided connector.
     async fn check_with<C>(&self, connector: C) -> Result<(), ()>
     where
         C: Connect + Clone + Send + Sync + 'static,
@@ -219,6 +227,7 @@ impl HttpService {
         Self::handle_res(&res).map_err(|_| ())
     }
 
+    /// Polls the HTTP service until it responds successfully or the timeout expires.
     async fn wait_with<C>(&self, connector: C) -> Result<(), Box<dyn DependencyWaitError>>
     where
         C: Connect + Clone + Send + Sync + 'static,

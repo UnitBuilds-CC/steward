@@ -163,11 +163,13 @@ where
     pub(crate) const SHELL: &'static str = "cmd";
 
     #[cfg(unix)]
+    /// Returns shell arguments for invoking a command string via `/bin/sh`.
     pub(crate) fn shelled(cmd: &str) -> [&str; 2] {
         ["-c", cmd]
     }
 
     #[cfg(windows)]
+    /// Returns shell arguments for invoking a command string via `cmd`.
     pub(crate) fn shelled(cmd: &str) -> [&str; 2] {
         ["/c", cmd]
     }
