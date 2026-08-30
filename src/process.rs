@@ -614,7 +614,7 @@ impl ProcessPool {
 
 mod colors {
     use console::Color;
-    use rand::{seq::SliceRandom, thread_rng};
+    use rand::{seq::SliceRandom, rng};
 
     pub fn make(n: u8) -> Vec<Color> {
         // Preferred colors
@@ -649,7 +649,7 @@ mod colors {
 
     fn shuffle<T>(mut items: Vec<T>, n: u8) -> Vec<T> {
         items.truncate(n as usize);
-        items.shuffle(&mut thread_rng());
+        items.shuffle(&mut rng());
         items
     }
 }

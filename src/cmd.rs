@@ -1,6 +1,5 @@
-use std::{io, ops::Deref, process::Stdio, time::Duration};
+use std::{io, ops::Deref, process::Stdio, sync::LazyLock, time::Duration};
 
-use once_cell::sync::Lazy;
 use tokio::process::Command;
 
 use crate::{Env, Location, Result, RunningProcess};
@@ -63,7 +62,7 @@ impl KillTimeout {
     }
 }
 
-static DEFAULT_KILL_TIMEOUT: Lazy<Duration> = Lazy::new(|| {
+static DEFAULT_KILL_TIMEOUT: LazyLock<Duration> = LazyLock::new(|| {
     let default = Duration::from_secs(10);
     match std::env::var("PROCESS_TIMEOUT") {
         Err(_) => default,
