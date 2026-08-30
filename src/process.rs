@@ -453,6 +453,8 @@ impl ProcessPool {
             .join(", ");
 
         eprintln!("❯ {} {}", console::style("Running:").bold(), processes_list);
+        #[cfg(feature = "tracing")]
+        tracing::info!(pool_size = pool_size, "Process pool starting");
 
         for (entry, color) in processes {
             let exited_processes = exited_processes.clone();
@@ -524,6 +526,8 @@ impl ProcessPool {
                     let mut process = match process.spawn(opts).await {
                         Ok(p) => p,
                         Err(err) => {
+                            #[cfg(feature = "tracing")]
+                            tracing::error!(tag = tag, error = %err, "Failed to spawn process");
                             eprintln!(
                                 "{} Failed to spawn {} process: {}",
                                 colored_tag_col, colored_tag, err
@@ -626,11 +630,15 @@ impl ProcessPool {
         }
 
         signal::ctrl_c().await.map_err(Error::IoError)?;
+        #[cfg(feature = "tracing")]
+        tracing::info!("Ctrl+C received, waiting for processes to exit");
         eprintln!(); // Prints `^C` in terminal on its own line
 
         let expire = Instant::now() + timeout;
         while exited_processes.load(Ordering::SeqCst) < pool_size {
             if Instant::now() > expire {
+                #[cfg(feature = "tracing")]
+                tracing::warn!("Process pool shutdown timed out");
                 eprintln!("⚠️  Timeout. Exiting.");
                 break;
             }

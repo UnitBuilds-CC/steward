@@ -16,6 +16,7 @@ autoexamples = false
 
 [features]
 default = ["tls"]
+tracing = ["dep:tracing"]
 
 [dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "fs", "net", "time", "process", "signal", "io-util", "macros"] }
@@ -23,6 +24,7 @@ console = "0.14.1"
 thiserror = "2"
 rand = "0.9"
 async-trait = "0.1.50"
+tracing = { version = "0.1", optional = true }
 hyper = { version = "1", features = ["client", "http1"] }
 hyper-util = { version = "0.1", features = ["client", "client-legacy", "http1", "tokio"] }
 http-body-util = "0.1"
