@@ -34,6 +34,7 @@ enum NetServiceWaitError {
 impl DependencyWaitError for NetServiceWaitError {}
 
 /// TCP service.
+#[derive(Debug)]
 pub struct TcpService {
     /// A tag used as an identificator of the dependency in the output.
     pub tag: String,
@@ -111,6 +112,7 @@ impl Dependency for TcpService {
 }
 
 /// HTTP service.
+#[derive(Debug)]
 pub struct HttpService {
     /// A tag used as an identificator of the dependency in the output.
     pub tag: String,

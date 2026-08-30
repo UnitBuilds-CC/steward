@@ -18,6 +18,7 @@ use tokio::{
 use crate::{Cmd, Dependency, Error, KillTimeout, Location, Result, SpawnOptions};
 
 /// Long running process. Can be constructed via [`Process::new`](Process::new) or convenience [`process!`](crate::process!) macro.
+#[derive(Debug)]
 pub struct Process<Loc> {
     /// Tag used as an identificator in output when process runs as a part of a [`ProcessPool`](ProcessPool).
     pub tag: &'static str,
@@ -121,6 +122,7 @@ macro_rules! process {
 }
 
 /// Wrapper around a running child process.
+#[derive(Debug)]
 pub struct RunningProcess {
     pub(crate) process: Child,
     pub(crate) timeout: KillTimeout,
@@ -387,6 +389,7 @@ where
 /// ```ignore
 /// ProcessPool::run(vec![process_1, process_2]).await
 /// ```
+#[derive(Debug)]
 pub struct ProcessPool;
 
 impl ProcessPool {

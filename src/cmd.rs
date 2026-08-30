@@ -5,7 +5,7 @@ use tokio::process::Command;
 use crate::{Env, Location, Result, RunningProcess};
 
 /// Struct holds a specification of a command. Can be used for running one-off commands, long running processes etc.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Cmd<Loc> {
     /// Command to run.
     pub exe: String,
@@ -101,6 +101,7 @@ impl From<Duration> for KillTimeout {
 }
 
 /// Options for [`Cmd::spawn`](Cmd::spawn).
+#[derive(Debug)]
 pub struct SpawnOptions {
     /// Stdout stream.
     pub stdout: Stdio,
@@ -125,6 +126,7 @@ impl Default for SpawnOptions {
 }
 
 /// Enum returned from [`Cmd::output`](Cmd::output).
+#[derive(Debug)]
 pub struct Output(Vec<u8>);
 
 impl Output {

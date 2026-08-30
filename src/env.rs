@@ -1,7 +1,7 @@
 use std::collections::{hash_map, HashMap};
 
 /// Environment data for a [`Cmd`](crate::Cmd).
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Env(HashMap<String, String>);
 
 impl Env {
