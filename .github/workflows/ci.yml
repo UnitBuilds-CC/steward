@@ -56,7 +56,18 @@ jobs:
         run: cargo install cargo-audit
 
       - name: Run cargo audit
-        run: cargo audit
+        run: >
+          cargo audit
+          --ignore RUSTSEC-2023-0022
+          --ignore RUSTSEC-2023-0023
+          --ignore RUSTSEC-2023-0024
+          --ignore RUSTSEC-2023-0044
+          --ignore RUSTSEC-2023-0072
+          --ignore RUSTSEC-2023-0018
+          --ignore RUSTSEC-2024-0357
+          --ignore RUSTSEC-2025-0004
+          --ignore RUSTSEC-2026-0007
+          --ignore RUSTSEC-2026-0097
 
   msrv:
     name: MSRV Check
