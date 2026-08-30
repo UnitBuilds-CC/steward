@@ -621,7 +621,7 @@ impl ProcessPool {
                     }
                 }
 
-                exited_processes.fetch_add(1, Ordering::Relaxed);
+                exited_processes.fetch_add(1, Ordering::SeqCst);
             });
         }
 
@@ -629,7 +629,7 @@ impl ProcessPool {
         eprintln!(); // Prints `^C` in terminal on its own line
 
         let expire = Instant::now() + timeout;
-        while exited_processes.load(Ordering::Relaxed) < pool_size {
+        while exited_processes.load(Ordering::SeqCst) < pool_size {
             if Instant::now() > expire {
                 eprintln!("⚠️  Timeout. Exiting.");
                 break;
